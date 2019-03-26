@@ -1241,7 +1241,7 @@ print_thread_info_1 (struct ui_out *uiout, char *requested_threads,
 	  return;
 	}
 
-      if (show_global_ids || ui_out_is_mi_like_p (uiout))
+      if ((show_global_ids & 1) ||  ui_out_is_mi_like_p (uiout))
 	make_cleanup_ui_out_table_begin_end (uiout, 5, n_threads, "threads");
       else
 	make_cleanup_ui_out_table_begin_end (uiout, 4, n_threads, "threads");
@@ -1250,7 +1250,7 @@ print_thread_info_1 (struct ui_out *uiout, char *requested_threads,
 
       if (!ui_out_is_mi_like_p (uiout))
 	ui_out_table_header (uiout, 4, ui_left, "id-in-tg", "Id");
-      if (show_global_ids || ui_out_is_mi_like_p (uiout))
+      if ((show_global_ids & 1) || ui_out_is_mi_like_p (uiout))
 	ui_out_table_header (uiout, 4, ui_left, "id", "GId");
       ui_out_table_header (uiout, 17, ui_left, "target-id", "Target Id");
       ui_out_table_header (uiout, 1, ui_left, "frame", "Frame");
@@ -1265,6 +1265,16 @@ print_thread_info_1 (struct ui_out *uiout, char *requested_threads,
       if (!should_print_thread (requested_threads, default_inf_num,
 				global_ids, pid, tp))
 	continue;
+
+      /* if a kernel thread and we're only displaying user threads, or
+       * or a user thread (non-zero tid) and we're displaying kernel
+       * threads, then skip this one.
+       */
+      if ( ((tp->ptid.tid == 0) && (show_global_ids & 2)) ||
+	   ((tp->ptid.tid != 0) && !(show_global_ids & 2))) 
+	{
+	  continue;
+	}
 
       chain2 = make_cleanup_ui_out_tuple_begin_end (uiout, NULL);
 
@@ -1287,7 +1297,7 @@ print_thread_info_1 (struct ui_out *uiout, char *requested_threads,
       if (!ui_out_is_mi_like_p (uiout))
 	ui_out_field_string (uiout, "id-in-tg", print_thread_id (tp));
 
-      if (show_global_ids || ui_out_is_mi_like_p (uiout))
+      if ((show_global_ids & 1) || ui_out_is_mi_like_p (uiout))
 	ui_out_field_int (uiout, "id", tp->global_num);
 
       /* For the CLI, we stuff everything into the target-id field.
@@ -1403,11 +1413,17 @@ info_threads_command (char *arg, int from_tty)
 {
   int show_global_ids = 0;
 
-  if (arg != NULL
-      && check_for_argument (&arg, "-gid", sizeof ("-gid") - 1))
+  if (arg != NULL)
     {
-      arg = skip_spaces (arg);
-      show_global_ids = 1;
+      if (check_for_argument (&arg, "-gid", sizeof ("-gid") - 1))
+	{
+	  arg = skip_spaces (arg);
+	  show_global_ids |= 1;
+	}
+      if (check_for_argument(&arg, "-user", sizeof("-user") - 1))
+	{
+	  show_global_ids |= 2;
+	}
     }
 
   print_thread_info_1 (current_uiout, arg, 0, -1, show_global_ids);
