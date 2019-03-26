@@ -1187,6 +1187,14 @@ regcache_collect_regset (const struct regset *regset,
 			    NULL, buf, size);
 }
 
+#ifndef NOKAZAR
+int 
+regcache_is_user_thread(struct regcache *regcache)
+{
+  return (regcache->ptid.tid != 0);
+}
+#endif
+
 
 /* Special handling for register PC.  */
 

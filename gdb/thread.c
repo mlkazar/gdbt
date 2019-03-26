@@ -49,6 +49,8 @@
 
 /* Prototypes for exported functions.  */
 
+void uthread_command (char *tidstr, int from_tty);
+
 void _initialize_thread (void);
 
 /* Prototypes for local functions.  */
@@ -2207,6 +2209,9 @@ global_thread_id_make_value (struct gdbarch *gdbarch, struct internalvar *var,
 /* Commands with a prefix of `thread'.  */
 struct cmd_list_element *thread_cmd_list = NULL;
 
+/* Commands with a prefix of `uthread'.  */
+struct cmd_list_element *uthread_cmd_list = NULL;
+
 /* Implementation of `thread' variable.  */
 
 static const struct internalvar_funcs thread_funcs =
@@ -2241,6 +2246,12 @@ Otherwise, all threads are displayed."));
 Use this command to switch between threads.\n\
 The new thread ID must be currently known."),
 		  &thread_cmd_list, "thread ", 1, &cmdlist);
+
+  add_cmd ("uthread", class_run, uthread_command, _("\
+Use this command to switch between user threads.\n\
+The new thread ID must be currently known."),
+	   &cmdlist);
+
 
   add_prefix_cmd ("apply", class_run, thread_apply_command,
 		  _("Apply a command to a list of threads."),
@@ -2282,3 +2293,135 @@ Show printing of thread events (such as thread start and exit)."), NULL,
 
   observer_attach_thread_ptid_changed (restore_current_thread_ptid_changed);
 }
+
+#ifndef NOKAZAR
+
+/* structure represents a thread queue, and a thread element; this
+ * needs to move into a target.  It obviously needs to stay in sync
+ * with task.h.
+ */
+#include "arm-tdep.h"
+
+/* command to load user threads into system; need to clear out the old ones as well */
+void
+uthread_command (char *tidstr, int from_tty)
+{
+  struct thread_info *tinfop;
+  struct regcache *regcachep;
+  struct regcache *parentRegcachep;
+  struct gdbarch *archp;
+  struct address_space *aspacep;
+  struct inferior *infp;
+  struct expression *exprp;
+  struct value *valp;
+  struct value *dataValp;
+  struct type *valTypep;
+  gdb_byte *datap;
+  long long addr;
+  long long taskAddr;
+  struct kazar_thread_head threadHead;
+  struct kazar_thread thr;
+  ptid_t basePtid;
+  uint32_t offsetBack;
+  int globalId;
+  
+  printf("*in uthread command with '%s' and from=%d\n", tidstr, from_tty);
+  printf("*inferior %p\n", inferior_thread());
+  infp = current_inferior();
+
+  offsetBack = offsetof(struct kazar_thread, _allEntry);
+  printf("offsetBack is %x\n", offsetBack);
+
+  /* lookup basic address space, target architecture, from basic task */
+  parentRegcachep = get_current_regcache();
+  printf("parent regcache=%p\n", parentRegcachep);
+  archp = get_regcache_arch(parentRegcachep);
+  printf("parent arch=%p\n", archp);
+  aspacep = get_regcache_aspace(parentRegcachep);
+  printf("parent aspace=%p\n", aspacep);
+
+  /* lookup the symbol's address that points to the list of user-level tasks;
+   * store the address of the structure in addr.
+   */
+  exprp = parse_expression("&Task::_allTasks");
+  printf("expr=%p\n", exprp);
+  valp = evaluate_expression(exprp);
+  printf("valuep=%p\n",valp);
+  datap = value_contents_all_raw(valp);
+  addr = *(long *) datap;
+  printf("datap is %p, %llx\n", datap, addr);
+
+  /* now read the task queue */
+  read_data_memory(archp,
+		   /* !stack */ 0,
+		   addr,
+		   (gdb_byte *) &threadHead,
+		   sizeof(threadHead));
+
+  /* this should be a loop creating all user tasks by walking down the
+   * task queue; for now, just create one.  If it already exists, just
+   * update the registers from the saved context.  We'll read the task info
+   * from a target, and then copy the registers into a task's registers
+   * again, via a target operation.  Note that the list is a list of entries
+   * internal to the task structure, and we have to adjust the pointers by a
+   * fixed offset to find the task structure's start.
+   */
+  taskAddr = (((long long) threadHead._headp)? ((long long)threadHead._headp) - offsetBack : 0);
+  globalId = 10000;
+  while(taskAddr) {
+    tinfop = find_thread_global_id(globalId);
+    if (!tinfop) {
+      printf("creating new thread for id=%d at off=%llx\n", globalId, taskAddr);
+
+      tinfop = (struct thread_info *) xmalloc(sizeof(struct thread_info));
+      memset(tinfop, 0, sizeof(*tinfop));
+      tinfop->ptid.tid = globalId; /* XXX should have 'user' bit; this value
+				    * tells the 'continue' command not to start
+				    * the LWP for this task, since it isn't a real
+				    * task.
+				    */
+      tinfop->ptid.pid = infp->pid;
+      tinfop->ptid.lwp = thread_list->ptid.lwp;
+      tinfop->inf = infp;
+
+      read_data_memory(archp,
+		       /* !stack */ 0,
+		       (long) taskAddr,
+		       (gdb_byte *) &thr,
+		       sizeof(thr));
+
+      printf("thread read done\n");
+
+      /* create a register cache for this task */
+      regcachep = get_thread_arch_aspace_regcache (tinfop->ptid, archp, aspacep);
+      printf("new regcache is %p; parent is %p\n", regcachep, parentRegcachep);
+
+      /* and fill the register cache from the thread */
+      uthread_propagate_registers(tinfop, &thr);
+
+      /* not sure which of these will be used, but this lets us do 'th 10000'
+       * and get to this task.
+       */
+      tinfop->global_num = globalId;
+      tinfop->per_inf_num = globalId;
+
+      /* and add task to the list of all threads GDB knows about */
+      tinfop->next = thread_list;
+      thread_list = tinfop;
+
+      taskAddr = (long long) thr._allEntry._dqNextp;
+      if (taskAddr != 0)
+	taskAddr -= offsetBack;
+      globalId++;
+      printf("done with thread copy, next is %llx\n", taskAddr);
+    }
+    else {
+      printf("found thread, stopping\n");
+      break;
+    }
+  } /* loop over all */
+
+  /* since registers changed */
+  reinit_frame_cache();
+}
+#endif

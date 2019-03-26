@@ -956,6 +956,48 @@ value_at_lazy (struct type *type, CORE_ADDR addr)
   return get_value_at (type, addr, 1);
 }
 
+#ifndef NOKAZAR
+void
+read_data_memory (struct gdbarch *arch,
+		  int stack,
+		  CORE_ADDR memaddr,
+		  gdb_byte *buffer,
+		  size_t length)
+{
+  ULONGEST xfered_total = 0;
+  int unit_size = gdbarch_addressable_memory_unit_size (arch);
+  enum target_object object;
+
+  object = stack ? TARGET_OBJECT_STACK_MEMORY : TARGET_OBJECT_MEMORY;
+
+  while (xfered_total < length)
+    {
+      enum target_xfer_status status;
+      ULONGEST xfered_partial;
+
+      status = target_xfer_partial (current_target.beneath,
+				    object, NULL,
+				    buffer + xfered_total * unit_size, NULL,
+				    memaddr + xfered_total,
+				    length - xfered_total,
+				    &xfered_partial);
+
+      if (status == TARGET_XFER_OK)
+	/* nothing */;
+      else if (status == TARGET_XFER_UNAVAILABLE) {
+	/* nothing */;
+      }
+      else if (status == TARGET_XFER_EOF)
+	memory_error (TARGET_XFER_E_IO, memaddr + xfered_total);
+      else
+	memory_error (status, memaddr + xfered_total);
+
+      xfered_total += xfered_partial;
+      QUIT;
+    }
+}
+#endif /* NOKAZAR */
+
 void
 read_value_memory (struct value *val, LONGEST embedded_offset,
 		   int stack, CORE_ADDR memaddr,

@@ -3148,6 +3148,11 @@ proceed (CORE_ADDR addr, enum gdb_signal siggnal)
 	  if (!ptid_match (tp->ptid, resume_ptid))
 	    continue;
 
+#ifndef NOKAZAR
+	  if (tp->ptid.tid != 0)
+	    continue;
+#endif
+
 	  if (tp->resumed)
 	    {
 	      if (debug_infrun)

@@ -1,0 +1,15 @@
+wget https://ftp.gnu.org/gnu/gdb/gdb-7.12.tar.gz -P ~/Downloads/
+tar vxzf ~/Downloads/gdb-7.12.tar.gz -C ~/Downloads/
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get install libreadline-dev -y
+sudo apt-get autoclean
+cd ~/Downloads/gdb-7.12
+./configure --prefix=/usr --with-system-readline && make -j4
+sudo make -j4 -C gdb/ install
+sudo shutdown -r 0
+
+after a git clone:
+find . -name '*.texi*' |xargs touch -d 1/1/18
+find . -name '*.y' | xargs touch -d 1/1/18
+find . -name '*.info' |xargs touch

@@ -582,6 +582,17 @@ extern void read_value_memory (struct value *val, LONGEST embedded_offset,
 			       int stack, CORE_ADDR memaddr,
 			       gdb_byte *buffer, size_t length);
 
+#ifndef NOKAZAR
+/* read LENGTH addressable memory bytes into specified buffer.  Other parameters
+ * are as in read_value_memory.
+ */
+extern void read_data_memory (struct gdbarch *arch,
+			      int stack,
+			      CORE_ADDR memaddr,
+			      gdb_byte *buffer,
+			      size_t length);
+#endif /* NOKAZAR */
+
 /* Cast SCALAR_VALUE to the element type of VECTOR_TYPE, then replicate
    into each element of a new vector value with VECTOR_TYPE.  */
 

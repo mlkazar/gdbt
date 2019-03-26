@@ -61,6 +61,10 @@ extern enum register_status
   regcache_raw_read_signed (struct regcache *regcache,
 			    int regnum, LONGEST *val);
 
+#ifndef NOKAZAR
+extern int regcache_is_user_thread(struct regcache *regcache);
+#endif
+
 extern void regcache_raw_write_signed (struct regcache *regcache,
 				       int regnum, LONGEST val);
 extern void regcache_raw_write_unsigned (struct regcache *regcache,

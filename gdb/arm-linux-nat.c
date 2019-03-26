@@ -181,6 +181,9 @@ fetch_regs (struct regcache *regcache)
   else
     ret = ptrace (PTRACE_GETREGS, tid, 0, &regs);
 
+  printf("***basic fetch %d.%ld.%ld ret=%d\n",
+	 inferior_ptid.pid, inferior_ptid.lwp, inferior_ptid.tid, ret);
+
   if (ret < 0)
     perror_with_name (_("Unable to fetch general registers."));
 
@@ -208,6 +211,9 @@ store_regs (const struct regcache *regcache)
     }
   else
     ret = ptrace (PTRACE_GETREGS, tid, 0, &regs);
+
+  printf("***store fetch %d.%ld.%ld ret=%d\n",
+	 inferior_ptid.pid, inferior_ptid.lwp, inferior_ptid.tid, ret);
 
   if (ret < 0)
     perror_with_name (_("Unable to fetch general registers."));
@@ -381,6 +387,11 @@ arm_linux_fetch_inferior_registers (struct target_ops *ops,
   struct gdbarch *gdbarch = get_regcache_arch (regcache);
   struct gdbarch_tdep *tdep = gdbarch_tdep (gdbarch);
 
+#ifndef NOKAZAR
+  if (regcache_is_user_thread(regcache))
+    return;
+#endif
+
   if (-1 == regno)
     {
       fetch_regs (regcache);
@@ -416,6 +427,11 @@ arm_linux_store_inferior_registers (struct target_ops *ops,
 {
   struct gdbarch *gdbarch = get_regcache_arch (regcache);
   struct gdbarch_tdep *tdep = gdbarch_tdep (gdbarch);
+
+#ifndef NOKAZAR
+  if (regcache_is_user_thread(regcache))
+    return;
+#endif
 
   if (-1 == regno)
     {
