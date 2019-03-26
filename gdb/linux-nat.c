@@ -3948,7 +3948,14 @@ linux_nat_pid_to_str (struct target_ops *ops, ptid_t ptid)
       && (ptid_get_pid (ptid) != ptid_get_lwp (ptid)
 	  || num_lwps (ptid_get_pid (ptid)) > 1))
     {
-      snprintf (buf, sizeof (buf), "LWP %ld", ptid_get_lwp (ptid));
+      if (ptid_get_tid(ptid) != 0)
+	{
+	  snprintf (buf, sizeof (buf), "USR 0x%lx", ptid_get_tid (ptid));
+	}
+      else 
+	{
+	  snprintf (buf, sizeof (buf), "LWP %ld", ptid_get_lwp (ptid));
+	}
       return buf;
     }
 

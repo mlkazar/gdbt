@@ -2391,11 +2391,13 @@ uthread_command (char *tidstr, int from_tty)
 
       tinfop = (struct thread_info *) xmalloc(sizeof(struct thread_info));
       memset(tinfop, 0, sizeof(*tinfop));
-      tinfop->ptid.tid = globalId; /* XXX should have 'user' bit; this value
-				    * tells the 'continue' command not to start
-				    * the LWP for this task, since it isn't a real
-				    * task.
-				    */
+      tinfop->ptid.tid = (long) taskAddr;  /* XXX should have 'user'
+					    * bit; this value tells
+					    * the 'continue' command
+					    * not to start the LWP for
+					    * this task, since it
+					    * isn't a real task.
+					    */
       tinfop->ptid.pid = infp->pid;
       tinfop->ptid.lwp = thread_list->ptid.lwp;
       tinfop->inf = infp;
