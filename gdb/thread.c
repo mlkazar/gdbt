@@ -2359,7 +2359,7 @@ uthread_command (char *tidstr, int from_tty)
   /* lookup the symbol's address that points to the list of user-level tasks;
    * store the address of the structure in addr.
    */
-  exprp = parse_expression("&Task::_allTasks");
+  exprp = parse_expression("&Thread::_allThreads");
   printf("expr=%p\n", exprp);
   valp = evaluate_expression(exprp);
   printf("valuep=%p\n",valp);
