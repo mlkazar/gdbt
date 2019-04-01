@@ -2323,7 +2323,6 @@ void
 uthread_command (char *tidstr, int from_tty)
 {
   struct thread_info *tinfop;
-  struct regcache *regcachep;
   struct regcache *parentRegcachep;
   struct gdbarch *archp;
   struct address_space *aspacep;
@@ -2340,32 +2339,24 @@ uthread_command (char *tidstr, int from_tty)
   ptid_t basePtid;
   uint32_t offsetBack;
   int globalId;
+  int addedThreads;
   
-  printf("*in uthread command with '%s' and from=%d\n", tidstr, from_tty);
-  printf("*inferior %p\n", inferior_thread());
   infp = current_inferior();
 
   offsetBack = offsetof(struct kazar_thread, _allEntry);
-  printf("offsetBack is %x\n", offsetBack);
 
   /* lookup basic address space, target architecture, from basic task */
   parentRegcachep = get_current_regcache();
-  printf("parent regcache=%p\n", parentRegcachep);
   archp = get_regcache_arch(parentRegcachep);
-  printf("parent arch=%p\n", archp);
   aspacep = get_regcache_aspace(parentRegcachep);
-  printf("parent aspace=%p\n", aspacep);
 
   /* lookup the symbol's address that points to the list of user-level tasks;
    * store the address of the structure in addr.
    */
   exprp = parse_expression("&Thread::_allThreads");
-  printf("expr=%p\n", exprp);
   valp = evaluate_expression(exprp);
-  printf("valuep=%p\n",valp);
   datap = value_contents_all_raw(valp);
   addr = *(long *) datap;
-  printf("datap is %p, %llx\n", datap, addr);
 
   /* now read the task queue */
   read_data_memory(archp,
@@ -2384,11 +2375,11 @@ uthread_command (char *tidstr, int from_tty)
    */
   taskAddr = (((long long) threadHead._headp)? ((long long)threadHead._headp) - offsetBack : 0);
   globalId = 10000;
+  addedThreads = 0;
   while(taskAddr) {
+    addedThreads++;
     tinfop = find_thread_global_id(globalId);
     if (!tinfop) {
-      printf("creating new thread for id=%d at off=%llx\n", globalId, taskAddr);
-
       tinfop = (struct thread_info *) xmalloc(sizeof(struct thread_info));
       memset(tinfop, 0, sizeof(*tinfop));
       tinfop->ptid.tid = (long) taskAddr;  /* XXX should have 'user'
@@ -2408,11 +2399,8 @@ uthread_command (char *tidstr, int from_tty)
 		       (gdb_byte *) &thr,
 		       sizeof(thr));
 
-      printf("thread read done\n");
-
       /* create a register cache for this task */
-      regcachep = get_thread_arch_aspace_regcache (tinfop->ptid, archp, aspacep);
-      printf("new regcache is %p; parent is %p\n", regcachep, parentRegcachep);
+      get_thread_arch_aspace_regcache (tinfop->ptid, archp, aspacep);
 
       /* and fill the register cache from the thread */
       uthread_propagate_registers(tinfop, &thr);
@@ -2431,15 +2419,15 @@ uthread_command (char *tidstr, int from_tty)
       if (taskAddr != 0)
 	taskAddr -= offsetBack;
       globalId++;
-      printf("done with thread copy, next is %llx\n", taskAddr);
     }
     else {
-      printf("found thread, stopping\n");
       break;
     }
   } /* loop over all */
 
   /* since registers changed */
   reinit_frame_cache();
+
+  printf("Added %d user threads\n", addedThreads);
 }
 #endif
