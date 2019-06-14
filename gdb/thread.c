@@ -2316,7 +2316,7 @@ Show printing of thread events (such as thread start and exit)."), NULL,
  * needs to move into a target.  It obviously needs to stay in sync
  * with task.h.
  */
-#include "arm-tdep.h"
+#include "linux-tdep.h"
 
 /* command to load user threads into system; need to clear out the old ones as well */
 void

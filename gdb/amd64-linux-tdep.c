@@ -2297,3 +2297,41 @@ _initialize_amd64_linux_tdep (void)
   initialize_tdesc_x32_avx_linux ();
   initialize_tdesc_x32_avx512_linux ();
 }
+
+#ifndef NOKAZAR
+/* this needs to move into the targets-specific code.  This function
+ * takes a target specific thread (kazar_thread) and copies the
+ * registers into the regcache in the thread_info.
+ */
+void
+uthread_propagate_registers( thread_info *thrp, kazar_thread *kthrp)
+{
+#ifdef notdef
+  regcache *regcachep;
+  regcachep = get_thread_regcache (thrp->ptid);
+  if (!regcachep) {
+    printf("uthread_propagate_registers: can't find registers for %d.%ld.%ld\n",
+	   thrp->ptid.pid, thrp->ptid.lwp, thrp->ptid.tid);
+    return;
+  }
+
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM, kthrp->_ctx.uc_mcontext.arm_r0);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+1, kthrp->_ctx.uc_mcontext.arm_r1);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+2, kthrp->_ctx.uc_mcontext.arm_r2);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+3, kthrp->_ctx.uc_mcontext.arm_r3);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+4, kthrp->_ctx.uc_mcontext.arm_r4);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+5, kthrp->_ctx.uc_mcontext.arm_r5);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+6, kthrp->_ctx.uc_mcontext.arm_r6);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+7, kthrp->_ctx.uc_mcontext.arm_r7);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+8, kthrp->_ctx.uc_mcontext.arm_r8);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+9, kthrp->_ctx.uc_mcontext.arm_r9);
+  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+10, kthrp->_ctx.uc_mcontext.arm_r10);
+  regcache_raw_write_unsigned( regcachep, ARM_FP_REGNUM, kthrp->_ctx.uc_mcontext.arm_fp);
+  regcache_raw_write_unsigned( regcachep, ARM_IP_REGNUM, kthrp->_ctx.uc_mcontext.arm_ip);
+  regcache_raw_write_unsigned( regcachep, ARM_SP_REGNUM, kthrp->_ctx.uc_mcontext.arm_sp);
+  regcache_raw_write_unsigned( regcachep, ARM_LR_REGNUM, kthrp->_ctx.uc_mcontext.arm_lr);
+  regcache_raw_write_unsigned( regcachep, ARM_PC_REGNUM, kthrp->_ctx.uc_mcontext.arm_pc);
+  //  regcache_raw_write_unsigned( regcachep, ARM_PS_REGNUM, kthrp->_ctx.uc_mcontext.arm_cpsr);
+#endif
+};
+#endif /* NOKAZAR */

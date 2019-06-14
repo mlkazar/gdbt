@@ -13,3 +13,5 @@ after a git clone:
 find . -name '*.texi*' |xargs touch -d 1/1/18
 find . -name '*.y' | xargs touch -d 1/1/18
 find . -name '*.info' |xargs touch
+
+you may have to run the touches repeatedly after partial compilation failures
