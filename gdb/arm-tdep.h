@@ -289,33 +289,6 @@ extern void
 				       void *cb_data,
 				       const struct regcache *regcache);
 
-#ifndef NOKAZAR
-#include <ucontext.h>
-/* this really needs to turn into a tdep operation */
-struct kazar_thread_head {
-  struct kazar_thread_head *_headp;
-  struct kazar_thread_head *_tailp;
-  unsigned long _queueCount;
-  unsigned long _queueMaxCount;
-};
-
-struct kazar_thread_entry {
-  struct kazar_thread_entry *_dqNextp;
-  struct kazar_thread_entry *_dqPrevp;
-  struct kazar_thread *_taskp;
-};
-
-struct kazar_thread {
-  void *_vtablep;
-  struct kazar_thread *_dqNextp;
-  struct kazar_thread *_dqPrevp;
-  struct kazar_thread_entry _allEntry;
-  ucontext_t _ctx;
-};
-
-extern void uthread_propagate_registers( thread_info *thrp, kazar_thread *kthrp);
-#endif /* NOKAZAR */
-
 /* Target descriptions.  */
 extern struct target_desc *tdesc_arm_with_m;
 extern struct target_desc *tdesc_arm_with_iwmmxt;
