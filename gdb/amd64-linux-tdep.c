@@ -34,6 +34,7 @@
 #include "i386-linux-tdep.h"
 #include "linux-tdep.h"
 #include "x86-xstate.h"
+#include "gdbthread.h"
 
 #include "amd64-tdep.h"
 #include "solib-svr4.h"
@@ -2306,7 +2307,6 @@ _initialize_amd64_linux_tdep (void)
 void
 uthread_propagate_registers( thread_info *thrp, kazar_thread *kthrp)
 {
-#ifdef notdef
   regcache *regcachep;
   regcachep = get_thread_regcache (thrp->ptid);
   if (!regcachep) {
@@ -2315,23 +2315,19 @@ uthread_propagate_registers( thread_info *thrp, kazar_thread *kthrp)
     return;
   }
 
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM, kthrp->_ctx.uc_mcontext.arm_r0);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+1, kthrp->_ctx.uc_mcontext.arm_r1);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+2, kthrp->_ctx.uc_mcontext.arm_r2);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+3, kthrp->_ctx.uc_mcontext.arm_r3);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+4, kthrp->_ctx.uc_mcontext.arm_r4);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+5, kthrp->_ctx.uc_mcontext.arm_r5);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+6, kthrp->_ctx.uc_mcontext.arm_r6);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+7, kthrp->_ctx.uc_mcontext.arm_r7);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+8, kthrp->_ctx.uc_mcontext.arm_r8);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+9, kthrp->_ctx.uc_mcontext.arm_r9);
-  regcache_raw_write_unsigned( regcachep, ARM_A1_REGNUM+10, kthrp->_ctx.uc_mcontext.arm_r10);
-  regcache_raw_write_unsigned( regcachep, ARM_FP_REGNUM, kthrp->_ctx.uc_mcontext.arm_fp);
-  regcache_raw_write_unsigned( regcachep, ARM_IP_REGNUM, kthrp->_ctx.uc_mcontext.arm_ip);
-  regcache_raw_write_unsigned( regcachep, ARM_SP_REGNUM, kthrp->_ctx.uc_mcontext.arm_sp);
-  regcache_raw_write_unsigned( regcachep, ARM_LR_REGNUM, kthrp->_ctx.uc_mcontext.arm_lr);
-  regcache_raw_write_unsigned( regcachep, ARM_PC_REGNUM, kthrp->_ctx.uc_mcontext.arm_pc);
-  //  regcache_raw_write_unsigned( regcachep, ARM_PS_REGNUM, kthrp->_ctx.uc_mcontext.arm_cpsr);
-#endif
+  regcache_raw_write_unsigned( regcachep, AMD64_RBX_REGNUM, kthrp->_ctx.uc_mcontext.gregs[11]);
+  regcache_raw_write_unsigned( regcachep, AMD64_RBP_REGNUM, kthrp->_ctx.uc_mcontext.gregs[10]);
+  regcache_raw_write_unsigned( regcachep, AMD64_R12_REGNUM, kthrp->_ctx.uc_mcontext.gregs[4]);
+  regcache_raw_write_unsigned( regcachep, AMD64_R13_REGNUM, kthrp->_ctx.uc_mcontext.gregs[5]);
+  regcache_raw_write_unsigned( regcachep, AMD64_R14_REGNUM, kthrp->_ctx.uc_mcontext.gregs[6]);
+  regcache_raw_write_unsigned( regcachep, AMD64_R15_REGNUM, kthrp->_ctx.uc_mcontext.gregs[7]);
+  regcache_raw_write_unsigned( regcachep, AMD64_RDI_REGNUM, kthrp->_ctx.uc_mcontext.gregs[8]);
+  regcache_raw_write_unsigned( regcachep, AMD64_RSI_REGNUM, kthrp->_ctx.uc_mcontext.gregs[9]);
+  regcache_raw_write_unsigned( regcachep, AMD64_RDX_REGNUM, kthrp->_ctx.uc_mcontext.gregs[12]);
+  regcache_raw_write_unsigned( regcachep, AMD64_RCX_REGNUM, kthrp->_ctx.uc_mcontext.gregs[14]);
+  regcache_raw_write_unsigned( regcachep, AMD64_R8_REGNUM, kthrp->_ctx.uc_mcontext.gregs[0]);
+  regcache_raw_write_unsigned( regcachep, AMD64_R9_REGNUM, kthrp->_ctx.uc_mcontext.gregs[1]);
+  regcache_raw_write_unsigned( regcachep, AMD64_RIP_REGNUM, kthrp->_ctx.uc_mcontext.gregs[16]);
+  regcache_raw_write_unsigned( regcachep, AMD64_RSP_REGNUM, kthrp->_ctx.uc_mcontext.gregs[15]);
 };
 #endif /* NOKAZAR */
