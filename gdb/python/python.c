@@ -1245,8 +1245,12 @@ gdbpy_print_stack (void)
 				  "message.\n"));
 	    }
 	  else
+#if 0
 	    fprintf_filtered (gdb_stderr, "Python Exception %s %s: \n",
 			      type, msg);
+#else
+	  ;
+#endif
 	}
       CATCH (except, RETURN_MASK_ALL)
 	{
